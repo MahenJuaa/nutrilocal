@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 
 import 'home/home_screen.dart';
 
-import 'home/add_meal_screen.dart';
-
 import 'history/history_screen.dart';
 
 import 'progress/progress_screen.dart';
 
 import 'profile/profile_screen.dart';
+
+import 'ai/ai_scanner_screen.dart';
 
 class MainScreen
     extends StatefulWidget {
@@ -34,6 +34,8 @@ class _MainScreenState
 
     HomeScreen(),
 
+    AiScannerScreen(),
+
     HistoryScreen(),
 
     ProgressScreen(),
@@ -44,6 +46,8 @@ class _MainScreenState
   final List<IconData> icons = [
 
     Icons.home_rounded,
+
+    Icons.auto_awesome,
 
     Icons.history_rounded,
 
@@ -56,9 +60,11 @@ class _MainScreenState
 
     'Home',
 
-    'History',
+    'AI Scan',
 
-    'Progress',
+    'Logs',
+
+    'Stats',
 
     'Profile',
   ];
@@ -74,39 +80,6 @@ class _MainScreenState
     return Scaffold(
 
       extendBody: true,
-
-      floatingActionButton:
-          FloatingActionButton(
-
-        backgroundColor:
-            const Color(
-                0xFF7C3AED),
-
-        elevation: 0,
-
-        onPressed: () {
-
-          Navigator.push(
-
-            context,
-
-            MaterialPageRoute(
-
-              builder:
-                  (_) =>
-                      AddMealScreen(),
-            ),
-          );
-        },
-
-        child: const Icon(
-
-          Icons.add,
-
-          color:
-              Colors.white,
-        ),
-      ),
 
       body:
           AnimatedSwitcher(
@@ -126,18 +99,18 @@ class _MainScreenState
         margin:
             const EdgeInsets.fromLTRB(
 
-          20,
+          18,
           0,
+          18,
           20,
-          24,
         ),
 
         padding:
             const EdgeInsets.symmetric(
 
-          horizontal: 16,
+          horizontal: 14,
 
-          vertical: 14,
+          vertical: 8,
         ),
 
         decoration:
@@ -145,7 +118,7 @@ class _MainScreenState
 
           borderRadius:
               BorderRadius.circular(
-                  32),
+                  30),
 
           color: isDark
 
@@ -178,12 +151,12 @@ class _MainScreenState
               ),
 
               blurRadius:
-                  28,
+                  24,
 
               offset:
                   const Offset(
                 0,
-                12,
+                10,
               ),
             ),
           ],
@@ -227,10 +200,10 @@ class _MainScreenState
                     padding:
                         const EdgeInsets.symmetric(
 
-                      vertical: 14,
+                      vertical: 10,
 
                       horizontal:
-                          12,
+                          8,
                     ),
 
                     decoration:
@@ -238,7 +211,7 @@ class _MainScreenState
 
                       borderRadius:
                           BorderRadius.circular(
-                              22),
+                              20),
 
                       gradient:
                           isSelected
@@ -274,7 +247,7 @@ class _MainScreenState
 
                           scale:
                               isSelected
-                                  ? 1.1
+                                  ? 1.08
                                   : 1,
 
                           child: Icon(
@@ -292,17 +265,20 @@ class _MainScreenState
 
                                         : Colors.black54,
 
-                            size: 28,
+                            size: 24,
                           ),
                         ),
 
                         const SizedBox(
                             height:
-                                8),
+                                6),
 
                         Text(
 
                           labels[index],
+
+                          textAlign:
+                              TextAlign.center,
 
                           style:
                               TextStyle(
@@ -319,7 +295,7 @@ class _MainScreenState
                                         : Colors.black54,
 
                             fontSize:
-                                13,
+                                11,
 
                             fontWeight:
                                 FontWeight.w700,

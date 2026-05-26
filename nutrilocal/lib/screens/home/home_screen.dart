@@ -16,6 +16,8 @@ import '../../widgets/ai_insight_card.dart';
 
 import '../home/add_meal_screen.dart';
 
+import '../ai/ai_scanner_screen.dart';
+
 class HomeScreen
     extends StatelessWidget {
 
@@ -460,6 +462,181 @@ class HomeScreen
                   height: 28),
 
               const AiInsightCard(),
+
+              const SizedBox(
+    height: 28),
+
+GestureDetector(
+
+  onTap: () {
+
+    Navigator.push(
+
+      context,
+
+      MaterialPageRoute(
+
+        builder:
+            (_) =>
+                AiScannerScreen(),
+      ),
+    );
+  },
+
+  child: Container(
+
+    width:
+        double.infinity,
+
+    padding:
+        const EdgeInsets.all(
+            28),
+
+    decoration:
+        BoxDecoration(
+
+      borderRadius:
+          BorderRadius.circular(
+              32),
+
+      gradient:
+          const LinearGradient(
+        colors: [
+
+          Color(
+              0xFF7C3AED),
+
+          Color(
+              0xFF06B6D4),
+        ],
+      ),
+
+      boxShadow: [
+
+        BoxShadow(
+
+          color:
+              const Color(
+            0xFF7C3AED,
+          ).withOpacity(
+            0.35,
+          ),
+
+          blurRadius:
+              24,
+
+          offset:
+              const Offset(
+            0,
+            10,
+          ),
+        ),
+      ],
+    ),
+
+    child: Row(
+
+      children: [
+
+        Container(
+
+          width: 84,
+          height: 84,
+
+          decoration:
+              BoxDecoration(
+
+            color:
+                Colors.white
+                    .withOpacity(
+              0.15,
+            ),
+
+            borderRadius:
+                BorderRadius.circular(
+                    24),
+          ),
+
+          child:
+              const Icon(
+
+            Icons.auto_awesome,
+
+            color:
+                Colors.white,
+
+            size: 42,
+          ),
+        ),
+
+        const SizedBox(
+            width:
+                22),
+
+        const Expanded(
+
+          child: Column(
+
+            crossAxisAlignment:
+                CrossAxisAlignment
+                    .start,
+
+            children: [
+
+              Text(
+
+                'AI Food Scanner',
+
+                style:
+                    TextStyle(
+
+                  color:
+                      Colors.white,
+
+                  fontSize:
+                      28,
+
+                  fontWeight:
+                      FontWeight.bold,
+                ),
+              ),
+
+              SizedBox(
+                  height:
+                      10),
+
+              Text(
+
+                'Scan food instantly and detect calories using AI computer vision.',
+
+                style:
+                    TextStyle(
+
+                  color:
+                      Colors.white70,
+
+                  fontSize:
+                      16,
+
+                  height:
+                      1.6,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const Icon(
+
+          Icons.arrow_forward_ios,
+
+          color:
+              Colors.white,
+        ),
+      ],
+    ),
+  ),
+),
 
               const SizedBox(
                   height: 28),
