@@ -8,7 +8,11 @@ import 'package:image_picker/image_picker.dart';
 
 import 'package:provider/provider.dart';
 
+import 'package:flutter/foundation.dart';
+
 import '../../providers/nutrition_provider.dart';
+
+import '../../services/api_service.dart';
 
 class AiScannerScreen
     extends StatefulWidget {
@@ -43,21 +47,21 @@ class _AiScannerScreenState
       scanAnimation;
 
   String detectedFood =
-      'Ayam Geprek';
+      '';
 
   int detectedCalories =
-      650;
+      0;
 
   String protein =
-      '24g';
+      '';
 
   String carbs =
-      '58g';
+      '';
 
   String fat =
-      '28g';
+      '';
 
-  File? selectedImage;
+  XFile? selectedImage;
 
   final ImagePicker picker =
       ImagePicker();
@@ -84,7 +88,7 @@ class _AiScannerScreenState
 
       begin: -120,
 
-      end: 120,
+      end: 180,
     ).animate(
 
       CurvedAnimation(
@@ -116,95 +120,39 @@ class _AiScannerScreenState
           ImageSource.gallery,
     );
 
-    if (image != null) {
-
-      setState(() {
-
-        selectedImage =
-            File(image.path);
-
-        showResult = false;
-      });
-    }
-  }
-
-  void detectFoodResult() {
-
-    if (selectedImage ==
-        null) {
+    if (image == null) {
       return;
     }
 
-    final path =
-        selectedImage!.path
-            .toLowerCase();
+    setState(() {
 
-    if (path.contains(
-        'nasi')) {
+      selectedImage =
+          image;
 
-      detectedFood =
-          'Nasi Goreng';
-
-      detectedCalories =
-          420;
-
-      protein = '12g';
-
-      carbs = '55g';
-
-      fat = '14g';
-    }
-
-    else if (path.contains(
-        'bakso')) {
-
-      detectedFood =
-          'Bakso';
-
-      detectedCalories =
-          380;
-
-      protein = '18g';
-
-      carbs = '42g';
-
-      fat = '10g';
-    }
-
-    else if (path.contains(
-        'mie')) {
-
-      detectedFood =
-          'Mie Ayam';
-
-      detectedCalories =
-          510;
-
-      protein = '20g';
-
-      carbs = '60g';
-
-      fat = '18g';
-    }
-
-    else {
-
-      detectedFood =
-          'Ayam Geprek';
-
-      detectedCalories =
-          650;
-
-      protein = '24g';
-
-      carbs = '58g';
-
-      fat = '28g';
-    }
+      showResult = false;
+    });
   }
 
   Future<void>
       startScanning() async {
+
+    if (selectedImage ==
+        null) {
+
+      ScaffoldMessenger.of(
+              context)
+          .showSnackBar(
+
+        const SnackBar(
+
+          content: Text(
+            'Please choose an image first',
+          ),
+        ),
+      );
+
+      return;
+    }
 
     setState(() {
 
@@ -213,7 +161,7 @@ class _AiScannerScreenState
       showResult = false;
 
       scanningText =
-          'Initializing AI...';
+          'Uploading Image...';
     });
 
     await Future.delayed(
@@ -250,42 +198,75 @@ class _AiScannerScreenState
           'Matching Nutrition Database...';
     });
 
-    await Future.delayed(
+    final response =
+        await ApiService
+            .scanFoodImage(
 
-      const Duration(
-        milliseconds: 1200,
-      ),
+      imageFile:
+          selectedImage!,
     );
 
     if (!mounted) {
       return;
     }
 
-    setState(() {
+    if (response.data !=
+        null) {
 
-      scanningText =
-          'Estimating Calories...';
-    });
+      final data =
+          response.data;
 
-    await Future.delayed(
+      setState(() {
 
-      const Duration(
-        milliseconds: 1200,
-      ),
-    );
+        detectedFood =
+            data['name']
+                .toString();
 
-    if (!mounted) {
-      return;
+        detectedCalories =
+            (data['calories']
+                    as num)
+                .toInt();
+
+        protein =
+            '${data['protein']}g';
+
+        carbs =
+            '${data['carbs']}g';
+
+        fat =
+            '${data['fat']}g';
+
+        isScanning = false;
+
+        showResult = true;
+      });
     }
 
-    detectFoodResult();
+    else {
 
-    setState(() {
+      setState(() {
 
-      isScanning = false;
+        isScanning = false;
 
-      showResult = true;
-    });
+        showResult = false;
+      });
+
+      ScaffoldMessenger.of(
+              context)
+          .showSnackBar(
+
+        const SnackBar(
+
+          backgroundColor:
+              Colors.red,
+
+          content: Text(
+
+            'AI failed to recognize food',
+          ),
+        ),
+      );
+    }
   }
 
   @override
@@ -534,15 +515,30 @@ class _AiScannerScreenState
 
                         children: [
 
-                          selectedImage != null
+                          selectedImage !=
+                                  null
 
-                              ? Image.file(
+                              ? (kIsWeb
 
-                                  selectedImage!,
+                                  ? Image.network(
 
-                                  fit:
-                                      BoxFit.cover,
-                                )
+                                      selectedImage!
+                                          .path,
+
+                                      fit:
+                                          BoxFit.cover,
+                                    )
+
+                                  : Image.file(
+
+                                      File(
+                                        selectedImage!
+                                            .path,
+                                      ),
+
+                                      fit:
+                                          BoxFit.cover,
+                                    ))
 
                               : Image.asset(
 
@@ -1088,12 +1084,12 @@ class _AiScannerScreenState
                         ),
                       ),
 
-                      child: Text(
+                      child: const Text(
 
                         'AI Recommendation:\nBalance your meal with vegetables and hydration for healthier nutrition.',
 
                         style:
-                            const TextStyle(
+                            TextStyle(
 
                           fontSize:
                               15,
@@ -1139,15 +1135,20 @@ class _AiScannerScreenState
                         ),
 
                         onPressed:
-                            () {
+                            () async {
 
-                          nutritionProvider
+                          await nutritionProvider
                               .addMeal(
 
                             detectedFood,
 
                             detectedCalories,
                           );
+
+                          if (!context
+                              .mounted) {
+                            return;
+                          }
 
                           ScaffoldMessenger.of(
                                   context)

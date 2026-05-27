@@ -1,9 +1,12 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart'
     as http;
 
 import '../core/api_state.dart';
+
+import 'package:image_picker/image_picker.dart';
 
 class ApiService {
 
@@ -139,7 +142,7 @@ class ApiService {
           await http.get(
 
         Uri.parse(
-          '$baseUrl/foods',
+          '$baseUrl/api/foods',
         ),
       );
 
@@ -172,6 +175,51 @@ class ApiService {
   }
 
   static Future<ApiState<dynamic>>
+      searchFood({
+
+    required String foodName,
+
+  }) async {
+
+    try {
+
+      final response =
+          await http.get(
+
+        Uri.parse(
+          '$baseUrl/api/foods/search/$foodName',
+        ),
+      );
+
+      if (response.statusCode ==
+          200) {
+
+        final data =
+            jsonDecode(
+          response.body,
+        );
+
+        return ApiState.success(
+          data,
+        );
+      }
+
+      return ApiState.error(
+
+        'Food not found',
+      );
+    }
+
+    catch (e) {
+
+      return ApiState.error(
+
+        'Connection failed',
+      );
+    }
+  }
+
+  static Future<ApiState<dynamic>>
       addMeal({
 
     required String userEmail,
@@ -188,7 +236,7 @@ class ApiService {
           await http.post(
 
         Uri.parse(
-          '$baseUrl/meals',
+          '$baseUrl/log-food',
         ),
 
         headers: {
@@ -231,6 +279,78 @@ class ApiService {
     catch (e) {
 
       return ApiState.error(
+        'Connection failed',
+      );
+    }
+  }
+
+  static Future<ApiState<dynamic>>
+      scanFoodImage({
+
+    required XFile imageFile,
+
+  }) async {
+
+    try {
+
+      var request =
+          http.MultipartRequest(
+
+        'POST',
+
+        Uri.parse(
+          '$baseUrl/api/scan-food',
+        ),
+      );
+
+      // Gunakan readAsBytes() agar aman dikirim via Web maupun Mobile
+      final bytes =
+          await imageFile.readAsBytes();
+
+      request.files.add(
+
+        http.MultipartFile.fromBytes(
+
+          'image',
+
+          bytes,
+
+          filename:
+              imageFile.name,
+        ),
+      );
+
+      var streamedResponse =
+          await request.send();
+
+      var response =
+          await http.Response.fromStream(
+        streamedResponse,
+      );
+
+      if (response.statusCode ==
+          200) {
+
+        final data =
+            jsonDecode(
+          response.body,
+        );
+
+        return ApiState.success(
+          data,
+        );
+      }
+
+      return ApiState.error(
+
+        'Failed to scan food',
+      );
+    }
+
+    catch (e) {
+
+      return ApiState.error(
+
         'Connection failed',
       );
     }

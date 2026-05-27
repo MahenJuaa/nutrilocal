@@ -1,222 +1,77 @@
-from fastapi import FastAPI, HTTPException
+import os
+import shutil
+from fastapi import FastAPI, UploadFile, File, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
+from pydantic import BaseModel
+import db
 
-from jose import jwt
+# Inisialisasi Database
+db.init_db()
 
-from sqlalchemy import text
+app = FastAPI(title="NutriLocal API")
 
-from db import SessionLocal
-
-app = FastAPI()
-
+# Konfigurasi CORS agar bisa diakses oleh aplikasi mobile/web
 app.add_middleware(
     CORSMiddleware,
-
     allow_origins=["*"],
-
-    allow_credentials=True,
-
     allow_methods=["*"],
-
     allow_headers=["*"],
 )
 
-SECRET_KEY = "nutrilocal-secret"
+# Skema Pydantic
+class FoodResponse(BaseModel):
+    id: int
+    name: str
+    calories: float
+    protein: float
+    carbs: float
+    fat: float
 
-foods = [
-    {
-        "name": "Nasi Goreng",
-        "calories": 450,
-    },
+    class Config:
+        from_attributes = True  # Menggantikan orm_mode di Pydantic v2
 
-    {
-        "name": "Ayam Geprek",
-        "calories": 520,
-    },
+class MealRequest(BaseModel):
+    user_email: str
+    food_name: str
+    calories: int
 
-    {
-        "name": "Soto Ayam",
-        "calories": 320,
-    },
-]
+def get_db():
+    database = db.SessionLocal()
+    try:
+        yield database
+    finally:
+        database.close()
 
+@app.get("/api/foods", response_model=list[FoodResponse])
+def get_all_foods(database: Session = Depends(get_db)):
+    return database.query(db.FoodItem).all()
 
-@app.get("/")
-def home():
+@app.post("/api/scan-food", response_model=FoodResponse)
+async def scan_food(image: UploadFile = File(...), database: Session = Depends(get_db)):
+    """
+    Endpoint pemindai makanan dengan penanganan file yang aman.
+    """
+    # Pastikan direktori temp ada (penting untuk cloud)
+    temp_filename = f"temp_{image.filename}"
+    try:
+        with open(temp_filename, "wb") as buffer:
+            shutil.copyfileobj(image.file, buffer)
+        
+        # LOGIKA AI (Integrasi model akan dilakukan di sini)
+        detected_label = "Ayam Geprek" 
+        
+        food = database.query(db.FoodItem).filter(db.FoodItem.name.ilike(f"%{detected_label}%")).first()
+        
+        if not food:
+            raise HTTPException(status_code=404, detail="Makanan tidak ditemukan di database.")
+            
+        return food
+    finally:
+        # Hapus file setelah diproses agar tidak memenuhi storage server
+        if os.path.exists(temp_filename):
+            os.remove(temp_filename)
 
-    return {
-        "message": "NutriLocal API Running"
-    }
-
-
-@app.get("/foods")
-def get_foods():
-
-    return foods
-
-
-@app.get("/meals/{email}")
-def get_meals(email: str):
-
-    db = SessionLocal()
-
-    query = text(
-        """
-        SELECT food_name, calories
-        FROM meals
-        WHERE user_email = :email
-        """
-    )
-
-    result = db.execute(
-
-        query,
-
-        {
-            "email": email
-        },
-    ).fetchall()
-
-    meals = []
-
-    for meal in result:
-
-        meals.append({
-
-            "food_name":
-                meal.food_name,
-
-            "calories":
-                meal.calories,
-        })
-
-    return meals
-
-
-@app.post("/meals")
-def add_meal(data: dict):
-
-    db = SessionLocal()
-
-    query = text(
-        """
-        INSERT INTO meals (
-            user_email,
-            food_name,
-            calories
-        )
-
-        VALUES (
-            :user_email,
-            :food_name,
-            :calories
-        )
-        """
-    )
-
-    db.execute(
-
-        query,
-
-        {
-            "user_email":
-                data["user_email"],
-
-            "food_name":
-                data["food_name"],
-
-            "calories":
-                data["calories"],
-        },
-    )
-
-    db.commit()
-
-    return {
-        "message": "Meal added"
-    }
-
-
-@app.post("/register")
-def register(data: dict):
-
-    db = SessionLocal()
-
-    query = text(
-        """
-        INSERT INTO users (
-            email,
-            password
-        )
-
-        VALUES (
-            :email,
-            :password
-        )
-        """
-    )
-
-    db.execute(
-
-        query,
-
-        {
-            "email": data["email"],
-            "password": data["password"],
-        },
-    )
-
-    db.commit()
-
-    return {
-        "message": "User created"
-    }
-
-
-@app.post("/login")
-def login(data: dict):
-
-    db = SessionLocal()
-
-    email = data.get("email")
-    password = data.get("password")
-
-    query = text(
-        """
-        SELECT * FROM users
-        WHERE email = :email
-        AND password = :password
-        """
-    )
-
-    result = db.execute(
-
-        query,
-
-        {
-            "email": email,
-            "password": password,
-        },
-    ).fetchone()
-
-    if result:
-
-        token = jwt.encode(
-            {
-                "email": email
-            },
-
-            SECRET_KEY,
-
-            algorithm="HS256",
-        )
-
-        return {
-            "token": token
-        }
-
-    raise HTTPException(
-        status_code=401,
-
-        detail="Invalid credentials"
-    )
+@app.post("/log-food")
+def log_food(meal: MealRequest, database: Session = Depends(get_db)):
+    return {"message": "Meal logged successfully", "data": meal}
