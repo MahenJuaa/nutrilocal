@@ -1,44 +1,45 @@
+import os
+from dotenv import load_dotenv
 from sqlalchemy import create_engine, Column, Integer, String, Float
 from sqlalchemy.orm import declarative_base, sessionmaker
 
-# Koneksi langsung ke Supabase (Gunakan .env di produksi)
-DATABASE_URL = "postgresql://postgres.ubdlbcldkmqxykpivpmd:NutrilocAl123@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres"
+# 1. Muat Environment Variables dari file .env
+load_dotenv()
 
-# engine dengan pool_pre_ping=True wajib untuk koneksi cloud (Supabase) 
-# agar koneksi yang terputus (idle) direkoneksi otomatis tanpa error.
+# 2. Ambil URL Utuh langsung dari .env
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL tidak ditemukan di file .env! Pastikan penulisan variabel benar.")
+
+# 3. Buat Engine & Session
+# Parameter pool_pre_ping=True krusial untuk mencegah koneksi terputus tiba-tiba di Supabase
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-# Definisi Skema Tabel Database
-class FoodItem(Base):
-    __tablename__ = "nutrition_db"
+# --- SKEMA TABEL DATABASE ---
 
+class User(Base):
+    __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True, index=True)
+    email = Column(String, unique=True, index=True)
+    password = Column(String)
+
+class FoodItem(Base):
+    __tablename__ = "foods"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True)
     calories = Column(Float)
     protein = Column(Float)
     carbs = Column(Float)
     fat = Column(Float)
 
+# Fungsi untuk mengeksekusi pembuatan tabel di Supabase
 def init_db():
-    # Perintah ini akan mengecek Supabase, jika tabel 'nutrition_db' belum ada, otomatis dibuat.
-    Base.metadata.create_all(bind=engine)
-    db = SessionLocal()
-    
-    # Auto-seeding: Mengisi data awal untuk demo presentasi jika tabel masih kosong
-    if db.query(FoodItem).count() == 0:
-        dummy_foods = [
-            FoodItem(name="Ayam Geprek", calories=550.0, protein=25.0, carbs=35.0, fat=30.0),
-            FoodItem(name="Nasi Goreng", calories=400.0, protein=12.0, carbs=50.0, fat=15.0),
-            FoodItem(name="Telur Balado", calories=180.0, protein=13.0, carbs=5.0, fat=12.0),
-            FoodItem(name="Pecel Madiun", calories=250.0, protein=10.0, carbs=30.0, fat=8.0),
-            FoodItem(name="Mie Ayam", calories=450.0, protein=15.0, carbs=60.0, fat=18.0)
-        ]
-        db.add_all(dummy_foods)
-        db.commit()
-        print("Data awal (Seeding) berhasil dimasukkan ke Supabase.")
-    else:
-        print("Database Supabase sudah terisi data.")
-        
-    db.close()
+    try:
+        # Test koneksi sekaligus membuat tabel jika belum ada
+        Base.metadata.create_all(bind=engine)
+        print("[DATABASE] Koneksi ke Supabase Berhasil!")
+    except Exception as e:
+        print(f"[DATABASE ERROR] Gagal terhubung: {e}")

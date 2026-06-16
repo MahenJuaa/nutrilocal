@@ -1,0 +1,5 @@
+0 Nasi Goreng
+1 Ayam Goreng
+2 Nasi Rendang
+3 Sate
+4 Soto
