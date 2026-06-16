@@ -1,11 +1,5 @@
 enum ApiStatus {
-
-  initial,
-
-  loading,
-
   success,
-
   error,
 }
 
@@ -17,7 +11,7 @@ class ApiState<T> {
 
   final String? message;
 
-  const ApiState({
+  ApiState({
 
     required this.status,
 
@@ -26,39 +20,31 @@ class ApiState<T> {
     this.message,
   });
 
-  factory ApiState.initial() {
-
-    return const ApiState(
-      status: ApiStatus.initial,
-    );
-  }
-
-  factory ApiState.loading() {
-
-    return const ApiState(
-      status: ApiStatus.loading,
-    );
-  }
-
   factory ApiState.success(
+
     T data,
+
   ) {
 
     return ApiState(
 
-      status: ApiStatus.success,
+      status:
+          ApiStatus.success,
 
       data: data,
     );
   }
 
   factory ApiState.error(
+
     String message,
+
   ) {
 
     return ApiState(
 
-      status: ApiStatus.error,
+      status:
+          ApiStatus.error,
 
       message: message,
     );
